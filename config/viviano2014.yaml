@@ -1,0 +1,261 @@
+# Índices espectrales Viviano-Beck et al. (2014) para productos SR MTRDR
+# Los nombres de banda deben coincidir con el campo band names del archivo .HDR
+
+reference:
+  citation: "Viviano-Beck et al. (2014), JGR Planets, doi:10.1002/2014JE004627"
+  pds_catalog: "MRO-M-CRISM-5-RDR-MPTARGETED-V1.0"
+
+# Productos browse oficiales (RGB = R, G, B)
+browse_products:
+  TRU:
+    name: True color
+    rgb: [R600, R530, R440]
+    theme: albedo
+  VNA:
+    name: VNIR albedo
+    rgb: [R770, R770, R770]
+    theme: albedo
+  FEM:
+    name: Fe minerals
+    rgb: [BD530_2, SH600_2, BDI1000VIS]
+    theme: iron
+  FM2:
+    name: Fe minerals v2
+    rgb: [BD530_2, BD920_2, BDI1000VIS]
+    theme: iron
+  TAN:
+    name: Tandem
+    rgb: [R2529, IRA, R770]
+    theme: albedo
+  IRA:
+    name: IR albedo
+    rgb: [R1300, R1300, R1300]
+    theme: albedo
+  FAL:
+    name: False color
+    rgb: [R2529, R1506, R1080]
+    theme: mafic
+  MAF:
+    name: Mafic mineralogy
+    rgb: [OLINDEX3, LCPINDEX2, HCPINDEX2]
+    theme: mafic
+  HYD:
+    name: Hydrated mineralogy
+    rgb: [SINDEX2, BD2100_2, BD1900_2]
+    theme: hydrated
+  PHY:
+    name: Phyllosilicates
+    rgb: [D2300, D2200, BD1900r2]
+    theme: phyllosilicate
+  PFM:
+    name: Phyllosilicates Fe/Mg
+    rgb: [BD2355, D2300, BD2290]
+    theme: phyllosilicate
+  PAL:
+    name: Phyllosilicates Al
+    rgb: [BD2210_2, BD2190, BD2165]
+    theme: phyllosilicate
+  HYS:
+    name: Hydrated silica
+    rgb: [MIN2250, BD2250, BD1900r2]
+    theme: silica
+  ICE:
+    name: Ices
+    rgb: [BD1900_2, BD1500_2, BD1435]
+    theme: ice
+  IC2:
+    name: Ices v2
+    rgb: [R3920, BD1500_2, BD1435]
+    theme: ice
+  CHL:
+    name: Chloride
+    rgb: [ISLOPE, BD3000, IRR2]
+    theme: chloride
+  CAR:
+    name: Carbonates
+    rgb: [D2300, BD2500H2, BD1900_2]
+    theme: carbonate
+  CR2:
+    name: Carbonates v2
+    rgb: [MIN2295_2480, MIN2345_2537, CINDEX2]
+    theme: carbonate
+
+# Grupos minerales para mapas temáticos (índice principal + secundarios)
+mineral_groups:
+  olivine:
+    label: Olivina
+    primary: OLINDEX3
+    secondary: [BDI1000VIS, RPEAK1]
+    browse: MAF
+  lcp:
+    label: Piroxeno bajo Ca (LCP)
+    primary: LCPINDEX2
+    secondary: [BD920_2]
+    browse: MAF
+  hcp:
+    label: Piroxeno alto Ca (HCP)
+    primary: HCPINDEX2
+    secondary: [BD2000]
+    browse: MAF
+  phyllosilicate_fe_mg:
+    label: Filosilicatos Fe/Mg
+    primary: D2300
+    secondary: [D2200, BD1900r2]
+    browse: PHY
+  phyllosilicate_al:
+    label: Filosilicatos Al
+    primary: BD2210_2
+    secondary: [BD2190, BD2165]
+    browse: PAL
+  hydrated_silica:
+    label: Sílice hidratada
+    primary: MIN2250
+    secondary: [BD2250, BD1900r2]
+    browse: HYS
+  monohydrated_sulfate:
+    label: Sulfato monohidratado
+    primary: BD2100_2
+    secondary: [SINDEX2]
+    browse: HYD
+  polyhydrated_sulfate:
+    label: Sulfato polihidratado
+    primary: BD1900_2
+    secondary: [BD2100_2]
+    browse: HYD
+  mg_carbonate:
+    label: Carbonato Mg
+    primary: D2300
+    secondary: [BD2500H2, BD1900_2]
+    browse: CAR
+  fe_ca_carbonate:
+    label: Carbonato Fe/Ca
+    primary: MIN2345_2537
+    secondary: [MIN2295_2480, CINDEX2]
+    browse: CR2
+  hematite:
+    label: Hematita / óxidos Fe cristalinos
+    primary: BD530_2
+    secondary: [SH600_2, BD860_2]
+    browse: FEM
+  np_ferric:
+    label: Óxido férrico nanofásico
+    primary: RBR
+    secondary: [BD530_2]
+    browse: FEM
+  chloride:
+    label: Cloruro
+    primary: ISLOPE
+    secondary: [BD3000, IRR2]
+    browse: CHL
+  water_ice:
+    label: Hielo de agua
+    primary: BD1500_2
+    secondary: [BD1435]
+    browse: ICE
+
+# Reglas de detección: todas las condiciones deben cumplirse (AND)
+# threshold_mode: percentile = percentil de la escena; fixed = valor absoluto
+mineral_detection:
+  olivine:
+    conditions:
+      - index: OLINDEX3
+        threshold_mode: percentile
+        threshold: 92
+      - index: BDI1000VIS
+        threshold_mode: percentile
+        threshold: 85
+  hcp:
+    conditions:
+      - index: HCPINDEX2
+        threshold_mode: percentile
+        threshold: 90
+      - index: LCPINDEX2
+        threshold_mode: percentile
+        threshold: 70
+        operator: lt  # HCP > umbral Y LCP por debajo del percentil 70
+  lcp:
+    conditions:
+      - index: LCPINDEX2
+        threshold_mode: percentile
+        threshold: 90
+  phyllosilicate_fe_mg:
+    conditions:
+      - index: D2300
+        threshold_mode: percentile
+        threshold: 88
+      - index: BD1900r2
+        threshold_mode: percentile
+        threshold: 85
+  phyllosilicate_al:
+    conditions:
+      - index: BD2210_2
+        threshold_mode: percentile
+        threshold: 88
+      - index: BD2165
+        threshold_mode: percentile
+        threshold: 85
+  mg_carbonate:
+    conditions:
+      - index: D2300
+        threshold_mode: percentile
+        threshold: 90
+      - index: BD2500H2
+        threshold_mode: percentile
+        threshold: 88
+  hydrated_silica:
+    conditions:
+      - index: MIN2250
+        threshold_mode: percentile
+        threshold: 90
+      - index: BD2250
+        threshold_mode: percentile
+        threshold: 85
+  monohydrated_sulfate:
+    conditions:
+      - index: BD2100_2
+        threshold_mode: percentile
+        threshold: 90
+      - index: BD1900_2
+        threshold_mode: percentile
+        threshold: 75
+        operator: lt
+  polyhydrated_sulfate:
+    conditions:
+      - index: BD1900_2
+        threshold_mode: percentile
+        threshold: 90
+      - index: BD2100_2
+        threshold_mode: percentile
+        threshold: 85
+  hematite:
+    conditions:
+      - index: BD530_2
+        threshold_mode: percentile
+        threshold: 92
+      - index: SH600_2
+        threshold_mode: percentile
+        threshold: 88
+
+# Unidades geológicas para clasificación supervisada (ejemplo editable)
+# Formato: nombre_unidad -> índices esperados altos (+) o bajos (-)
+unit_signatures:
+  basaltic_soil:
+    label: Suelo basáltico
+    high: [R770, BDI1000VIS]
+    low: [D2300, BD1900_2]
+  olivine_rich:
+    label: Unidad rica en olivina
+    high: [OLINDEX3, BDI1000VIS]
+    low: [D2300, HCPINDEX2]
+  clay_unit:
+    label: Unidad arcillosa
+    high: [D2300, D2200, BD1900r2]
+    low: [OLINDEX3]
+  sulfate_unit:
+    label: Unidad sulfatada
+    high: [BD2100_2, BD1900_2, SINDEX2]
+    low: [OLINDEX3]
+  carbonate_unit:
+    label: Unidad carbonatada
+    high: [D2300, BD2500H2]
+    low: [OLINDEX3, HCPINDEX2]

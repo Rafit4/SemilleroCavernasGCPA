@@ -1,0 +1,64 @@
+# Configuración general del pipeline CRISM MTRDR SR
+# Referencia: Viviano-Beck et al. (2014), JGR Planets, doi:10.1002/2014JE004627
+
+ode:
+  base_url: "https://oderest.rsl.wustl.edu/live2"
+  target: mars
+  ihid: MRO
+  iid: CRISM
+  pt: MTRDR
+  file_patterns:
+    - "*_SR*J_MTR3.IMG"
+    - "*_SR*J_MTR3.HDR"
+    - "*_SR*J_MTR3.LBL"
+
+paths:
+  raw: data/raw
+  processed: data/processed
+  maps: data/maps
+  models: data/models
+
+processing:
+  nodata_value: -9999.0
+  percentile_mask: 20  # percentil inferior para excluir fondo ruidoso al entrenar/clasificar
+  hdf5_compression: gzip
+
+stretch:
+  # Parámetros con stretch local (percentiles 0.1 y 99.9) según Viviano 2014 §5.3
+  local_percentile_params:
+    - R530
+    - R440
+    - R600
+    - R770
+    - R1080
+    - R1506
+    - R2529
+    - R3920
+    - SH600_2
+    - IRA
+    - ISLOPE1
+    - IRR2
+  local_lower_pct: 0.1
+  local_upper_pct: 99.9
+  fixed_lower: 0.0
+  global_upper_pct: 99.0
+
+classification:
+  default_features:
+    - OLINDEX3
+    - LCPINDEX2
+    - HCPINDEX2
+    - D2300
+    - D2200
+    - BD1900r2
+    - BD2100_2
+    - SINDEX2
+    - BD2500H2
+    - BDI1000VIS
+    - R770
+  default_n_clusters: 5
+  random_state: 42
+  sample_pixels_per_scene: 50000
+
+detection:
+  default_threshold_percentile: 95  # percentil de escena para umbral adaptativo

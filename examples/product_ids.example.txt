@@ -1,0 +1,4 @@
+# Lista de Product IDs CRISM MTRDR (uno por línea)
+# Ejemplo:
+# FRT00009001_07_IF163J_MTR3
+# FRT0001ECBA_07_IF166J_MTR3
