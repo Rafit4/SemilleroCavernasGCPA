@@ -62,15 +62,13 @@ La lista completa está en `config/viviano2014.yaml`.
 
 ## 1.6 Flujo conceptual del pipeline
 
-```
-ODE Map Search  →  Descarga SR (.img/.hdr)
-       ↓
-  Lectura ENVI  →  Cubo numpy (lines × samples × 60 bandas)
-       ↓
-  HDF5          →  Almacenamiento eficiente
-       ↓
-  ┌─────────────┼─────────────┐
-  ↓             ↓             ↓
-Mapas       Detección    Clasificación
-(mineral)   (binaria)    (unidades)
+```mermaid
+flowchart TD
+  A[ODE Map Search] --> B[Descarga SR<br/>.img / .hdr]
+  B --> C[Lectura ENVI<br/>cubo numpy · 60 bandas]
+  C --> D[Análisis]
+  D --> E[Mapas minerales<br/>browse + índices]
+  D --> F[Detección binaria<br/>por mineral]
+  D --> G[Clasificación<br/>unidades geológicas]
+  C -.-> H[Export GeoTIFF<br/>opcional · QGIS]
 ```

@@ -1,0 +1,34 @@
+# Entorno
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Datos locales / descargas ODE
+data/raw/
+data/processed/
+data/maps/
+*.h5
+*.tif
+*.img
+*.lbl
+*.HDR
+*.IMG
+*.LBL
+
+# Búsquedas ODE y exports locales
+SearchResults*.txt
+CRISM*.txt
+product_ids.txt
+*_spectra.csv
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+Thumbs.db

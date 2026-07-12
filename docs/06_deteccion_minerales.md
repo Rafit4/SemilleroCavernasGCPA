@@ -4,6 +4,13 @@
 
 Producir **mapas binarios** (presente/ausente) para minerales o grupos minerales usando reglas multi-índice definidas en `config/viviano2014.yaml`.
 
+```mermaid
+flowchart LR
+  C[Cubo SR ENVI] --> R[Reglas Viviano<br/>viviano2014.yaml]
+  R --> T[Umbrales adaptativos<br/>percentiles de escena]
+  T --> M[Máscara binaria<br/>PNG + GeoTIFF]
+```
+
 ## 6.2 Comando
 
 ```bash

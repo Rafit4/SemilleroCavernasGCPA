@@ -123,13 +123,19 @@ Para K-means, correlaciona cada cluster con:
 
 ## 7.7 Flujo integrado recomendado
 
+```mermaid
+flowchart TD
+  M[maps<br/>MAF · PHY · HYD] --> D[detect<br/>minerales clave]
+  D --> K[classify · kmeans<br/>segmentar escena]
+  K --> L[Etiquetar clusters<br/>CSV de entrenamiento]
+  L --> S[classify · supervised<br/>mapa con nombres geológicos]
 ```
-1. maps (MAF, PHY, HYD)     → identificar unidades visualmente
-2. detect (minerales clave)  → confirmar presencia
-3. classify (kmeans)         → segmentar escena
-4. Etiquetar clusters       → CSV de entrenamiento
-5. classify (supervised)    → mapa final con nombres geológicos
-```
+
+1. `maps` (MAF, PHY, HYD) → identificar unidades visualmente  
+2. `detect` (minerales clave) → confirmar presencia  
+3. `classify` (kmeans) → segmentar escena  
+4. Etiquetar clusters → CSV de entrenamiento  
+5. `classify` (supervised) → mapa final con nombres geológicos
 
 ## 7.8 Uso programático
 

@@ -16,11 +16,17 @@ from sklearn.preprocessing import StandardScaler
 
 from .config import pipeline_config, viviano_config
 from .io_sr import SRCube
-from .maps import load_cube, save_geotiff
+from .io_sr import load_cube
+from .maps import save_geotiff
 
 
 def _feature_stack(cube: SRCube, feature_names: list[str]) -> np.ndarray:
-    missing = [f for f in feature_names if f not in cube.band_names]
+    missing = []
+    for f in feature_names:
+        try:
+            cube._resolve_band_name(f)
+        except KeyError:
+            missing.append(f)
     if missing:
         raise KeyError(f"Bandas no encontradas en cubo SR: {missing}")
     stack = cube.bands(feature_names)

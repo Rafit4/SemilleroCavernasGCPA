@@ -2,23 +2,42 @@
 
 ## 3.1 Contexto
 
-Los productos CRISM MTRDR se catalogan en el [Orbital Data Explorer (ODE)](https://ode.rsl.wustl.edu/mars/mapsearch). El pipeline usa la [API REST](https://oderest.rsl.wustl.edu/) para descargar automáticamente los archivos **SR**.
+Los productos CRISM MTRDR se catalogan en el [Orbital Data Explorer (ODE)](https://ode.rsl.wustl.edu/mars/mapsearch). El pipeline usa la [API REST](https://oderest.rsl.wustl.edu/) para descargar archivos **SR** y/o **IF**.
 
 ## 3.2 Qué se descarga
 
-Por cada observación MTRDR, el módulo `download` filtra solo archivos SR:
+Por cada observación MTRDR puedes elegir qué productos bajar (`--data`):
 
-- `*_SR*J_MTR3.IMG` — cubo de 60 bandas (float32)
-- `*_SR*J_MTR3.HDR` — header ENVI con nombres de banda
-- `*_SR*J_MTR3.LBL` — label PDS (metadatos)
+| Opción | Archivos | Uso |
+|--------|----------|-----|
+| `sr` (default) | `*_SR*J_MTR3.{IMG,HDR,LBL}` | Índices Viviano (pipeline maps/detect/classify) |
+| `if` | `*_IF*J_MTR3.{IMG,HDR,LBL}` | Cubo I/F hiperespectral (validación espectral; mucho más pesado) |
+| `both` | SR + IF | Ambos en el mismo directorio de producto |
 
 Los archivos se organizan en `data/raw/<product_id>/`.
 
+```mermaid
+flowchart LR
+  ODE[ODE REST / Map Search] --> Q[Consulta productos]
+  Q --> F[Filtrar SR y/o IF<br/>IMG · HDR · LBL]
+  F --> R[data/raw / product_id]
+```
+
 ## 3.3 Métodos de descarga
 
-### Por Product ID (recomendado si ya seleccionaste en Map Search)
+### Por SearchResults.txt (recomendado si ya seleccionaste en Map Search)
 
-Copia los Product IDs desde ODE y créalos en un archivo de texto, o usa comodines:
+Exporta los resultados desde ODE Map Search y pásalos directo al pipeline:
+
+```bash
+python -m crism_pipeline download --ids-file SearchResults.txt
+python -m crism_pipeline download --ids-file SearchResults.txt --data both
+python -m crism_pipeline download --ids-file SearchResults.txt --data if
+```
+
+El parser lee la columna **PRODUCT ID** del CSV de ODE. También acepta una lista simple (un ID por línea).
+
+Alternativas:
 
 ```bash
 # Un producto
@@ -26,9 +45,6 @@ python -m crism_pipeline download --pdsid FRT00009001_07_IF163J_MTR3
 
 # Varios con comodín
 python -m crism_pipeline download --pdsid "FRT00009*" --max-products 5
-
-# Lista desde archivo
-python -m crism_pipeline download --ids-file examples/product_ids.txt
 ```
 
 ### Por bounding box (replica selección del mapa)
@@ -47,8 +63,8 @@ Donde `--bbox W_LON E_LON MIN_LAT MAX_LAT`.
 
 1. En [Map Search](https://ode.rsl.wustl.edu/mars/mapsearch), filtra por **CRISM → MTRDR**.
 2. Dibuja tu área de interés o usa filtros.
-3. En resultados, copia la columna **Product ID**.
-4. Pega en `examples/product_ids.txt` (un ID por línea).
+3. En resultados, usa **Export / Download Search Results** y guarda el `.txt`.
+4. Pásalo a `--ids-file` (p. ej. `SearchResults.txt`).
 
 ## 3.5 Verificación
 

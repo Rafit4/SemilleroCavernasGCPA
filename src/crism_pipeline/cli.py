@@ -10,18 +10,31 @@ from .config import resolve_path
 
 
 def _add_download(sub: argparse._SubParsersAction) -> None:
-    p = sub.add_parser("download", help="Descargar cubos SR desde ODE")
+    p = sub.add_parser("download", help="Descargar cubos SR y/o IF desde ODE")
     g = p.add_mutually_exclusive_group(required=True)
     g.add_argument("--pdsid", help="Product ID o patrón con *")
     g.add_argument("--bbox", nargs=4, type=float, metavar=("W", "E", "S", "N"))
-    g.add_argument("--ids-file", type=Path, help="Archivo con un Product ID por línea")
+    g.add_argument(
+        "--ids-file",
+        type=Path,
+        help="SearchResults.txt de ODE (columna PRODUCT ID) o lista un ID por línea",
+    )
     p.add_argument("--out", type=Path, default=None)
     p.add_argument("--max-products", type=int, default=None)
+    p.add_argument(
+        "--data",
+        choices=["sr", "if", "both"],
+        default="sr",
+        help="Qué descargar: sr (índices), if (cubo I/F) o both (default: sr)",
+    )
 
 
 def _add_process(sub: argparse._SubParsersAction) -> None:
-    p = sub.add_parser("process", help="Convertir SR crudo a HDF5 procesado")
-    p.add_argument("--input", type=Path, required=True, help="Directorio o .hdr del producto")
+    p = sub.add_parser(
+        "export",
+        help="[Opcional] Exportar copia GeoTIFF desde cubo ENVI",
+    )
+    p.add_argument("--input", type=Path, required=True, help="Directorio o .hdr/.img del producto")
     p.add_argument("--out", type=Path, default=None)
 
 
@@ -63,8 +76,13 @@ def _add_classify(sub: argparse._SubParsersAction) -> None:
 
 
 def _add_run(sub: argparse._SubParsersAction) -> None:
-    p = sub.add_parser("run", help="Pipeline completo: process, maps, detect, classify")
-    p.add_argument("--input", type=Path, required=True)
+    p = sub.add_parser("run", help="Pipeline completo: maps, detect, classify sobre cubo ENVI")
+    p.add_argument(
+        "--input",
+        type=Path,
+        required=True,
+        help="Directorio ENVI en data/raw o ruta al .hdr/.img",
+    )
     p.add_argument("--out", type=Path, default=None)
     p.add_argument("--method", choices=["kmeans", "signature"], default="kmeans")
     p.add_argument("--n-clusters", type=int, default=5)
@@ -74,29 +92,34 @@ def cmd_download(args: argparse.Namespace) -> int:
     from .download import download_batch, download_scene
 
     out = args.out or resolve_path("raw")
+    data = args.data
     if args.ids_file:
-        ids = [
-            line.strip()
-            for line in args.ids_file.read_text(encoding="utf-8").splitlines()
-            if line.strip() and not line.startswith("#")
-        ]
-        download_batch(ids, out)
+        from .download import parse_ids_file
+
+        ids = parse_ids_file(args.ids_file)
+        if not ids:
+            raise SystemExit(f"No se encontraron Product IDs en {args.ids_file}")
+        download_batch(ids, out, data=data)
     elif args.pdsid:
-        download_scene(pdsid=args.pdsid, out_dir=out, max_products=args.max_products)
+        download_scene(
+            pdsid=args.pdsid, out_dir=out, max_products=args.max_products, data=data
+        )
     else:
-        download_scene(bbox=tuple(args.bbox), out_dir=out, max_products=args.max_products)
-    print(f"Descarga completada en {out}")
+        download_scene(
+            bbox=tuple(args.bbox), out_dir=out, max_products=args.max_products, data=data
+        )
+    print(f"Descarga completada en {out} (datos: {data})")
     return 0
 
 
-def cmd_process(args: argparse.Namespace) -> int:
-    from .io_sr import export_hdf5, load_sr_cube
+def cmd_export(args: argparse.Namespace) -> int:
+    from .io_sr import export_geotiff, load_sr_cube
 
     out_root = args.out or resolve_path("processed")
     cube = load_sr_cube(args.input)
-    out_path = out_root / f"{cube.product_id}.h5"
-    export_hdf5(cube, out_path)
-    print(f"Cubo exportado: {out_path}")
+    tif_path = out_root / f"{cube.product_id}.tif"
+    export_geotiff(cube, tif_path)
+    print(f"GeoTIFF exportado: {tif_path}")
     print(f"Bandas: {len(cube.band_names)} | Forma: {cube.data.shape}")
     return 0
 
@@ -138,27 +161,21 @@ def cmd_classify(args: argparse.Namespace) -> int:
 def cmd_run(args: argparse.Namespace) -> int:
     from .classification import run_classification_pipeline
     from .detection import run_detection_pipeline
-    from .io_sr import export_hdf5, load_sr_cube
+    from .io_sr import load_sr_cube
     from .maps import generate_all_maps
 
-    out_root = args.out or resolve_path("processed")
-    scene_out = out_root / args.input.name
-    scene_out.mkdir(parents=True, exist_ok=True)
-
     cube = load_sr_cube(args.input)
-    h5 = scene_out / f"{cube.product_id}.h5"
-    export_hdf5(cube, h5)
-
     maps_dir = resolve_path("maps") / cube.product_id
-    generate_all_maps(h5, maps_dir)
-    run_detection_pipeline(h5, maps_dir / "detection")
+    generate_all_maps(args.input, maps_dir)
+    run_detection_pipeline(args.input, maps_dir / "detection")
     run_classification_pipeline(
-        h5,
+        args.input,
         maps_dir / "classification",
         method=args.method,
         n_clusters=args.n_clusters,
     )
     print(f"Pipeline completo para {cube.product_id}")
+    print(f"Salidas en {maps_dir}")
     return 0
 
 
@@ -169,7 +186,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     sub = parser.add_subparsers(dest="command", required=True)
     _add_download(sub)
-    _add_process(sub)
+    _add_process(sub)  # comando "export"
     _add_maps(sub)
     _add_detect(sub)
     _add_classify(sub)
@@ -182,7 +199,8 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     handlers = {
         "download": cmd_download,
-        "process": cmd_process,
+        "export": cmd_export,
+        "process": cmd_export,  # alias legado
         "maps": cmd_maps,
         "detect": cmd_detect,
         "classify": cmd_classify,

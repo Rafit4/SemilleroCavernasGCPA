@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from .config import viviano_config
-from .io_sr import SRCube
-from .maps import load_cube, save_geotiff
+from .io_sr import SRCube, load_cube
+from .maps import save_geotiff
 
 
 @dataclass
@@ -28,7 +28,9 @@ def _threshold_value(
     mode: str,
     value: float,
 ) -> float:
-    data = band[valid & np.isfinite(band)]
+    from .stretch import valid_data_mask
+
+    data = band[valid & valid_data_mask(band)]
     if data.size == 0:
         return 0.0
     if mode == "percentile":

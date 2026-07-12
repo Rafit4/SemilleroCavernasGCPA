@@ -11,6 +11,9 @@ ode:
     - "*_SR*J_MTR3.IMG"
     - "*_SR*J_MTR3.HDR"
     - "*_SR*J_MTR3.LBL"
+    - "*_IF*J_MTR3.IMG"
+    - "*_IF*J_MTR3.HDR"
+    - "*_IF*J_MTR3.LBL"
 
 paths:
   raw: data/raw
@@ -20,6 +23,8 @@ paths:
 
 processing:
   nodata_value: -9999.0
+  # Valores de relleno frecuentes en SR CRISM (además de nodata)
+  ignore_values: [-9999.0, 65535.0]
   percentile_mask: 20  # percentil inferior para excluir fondo ruidoso al entrenar/clasificar
   hdf5_compression: gzip
 

@@ -7,27 +7,26 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import numpy as np
 import rasterio
-from rasterio.transform import from_bounds
 
 from .config import viviano_config
-from .io_sr import SRCube, load_hdf5, load_sr_cube
+from .io_sr import SRCube, load_cube
 from .stretch import stretch_band, stretch_rgb
 
 
 def _geotransform(cube: SRCube, width: int, height: int):
+    from .io_sr import _build_geotransform
+
     mi = cube.map_info
-    if not mi or "lon" not in mi:
+    if not mi:
         return None, None
     try:
-        lon = float(mi["lon"])
-        lat = float(mi["lat"])
-        xsize = float(mi["x_pixel_size"])
-        ysize = float(mi["y_pixel_size"])
-        east = lon + width * xsize
-        north = lat
-        south = lat - height * abs(ysize)
-        transform = from_bounds(lon, south, east, north, width, height)
-        crs = "EPSG:4326"
+        gt = _build_geotransform(mi)
+        if gt is None:
+            return None, None
+        transform = rasterio.Affine(*gt)
+        crs = mi.get("crs_wkt")
+        if crs:
+            crs = str(crs).strip("{}")
         return transform, crs
     except (TypeError, ValueError):
         return None, None
@@ -55,11 +54,6 @@ def save_geotiff(array: np.ndarray, out_path: Path, cube: SRCube, count: int = 1
             for i in range(count):
                 dst.write(array[:, :, i], i + 1)
 
-
-def load_cube(source: Path) -> SRCube:
-    if source.suffix.lower() in {".h5", ".hdf5"}:
-        return load_hdf5(source)
-    return load_sr_cube(source)
 
 
 def render_index_map(

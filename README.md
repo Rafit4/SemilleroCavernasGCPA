@@ -2,16 +2,19 @@
 
 Pipeline en Python para descargar, procesar y analizar productos **CRISM MTRDR SR** (Refined Spectral Summary Parameters) usando los **60 índices espectrales de Viviano-Beck et al. (2014)**.
 
+Desarrollado en el contexto del **GCPA** (Grupo de investigación en Ciencias Planetarias y Astrobiología).
+
 ## Objetivos del pipeline
 
 | Módulo | Función |
 |--------|---------|
 | `download` | Descarga cubos SR desde [ODE REST API](https://oderest.rsl.wustl.edu/) |
-| `process` | Convierte ENVI (.img/.hdr) a HDF5 para procesamiento rápido |
 | `maps` | Mapas minerales (índices individuales + browse products RGB) |
 | `detect` | Detección binaria de minerales por umbrales adaptativos |
 | `classify` | Clasificación de unidades geológicas (K-means, firmas, supervisado) |
-| `run` | Ejecuta el flujo completo sobre una escena |
+| `run` | Ejecuta maps + detect + classify sobre el cubo ENVI descargado |
+| `export` | *(Opcional)* Copia GeoTIFF para QGIS |
+| GUI | Interfaz CustomTkinter (`crism-pipeline-gui`) — no altera el CLI |
 
 ## Instalación rápida
 
@@ -22,43 +25,57 @@ python -m venv .venv
 pip install -e .
 ```
 
-## Uso básico
+## Interfaz gráfica
+
+Misma lógica que el CLI, con branding GCPA, barra de progreso (%) por archivo/escena y acceso a la documentación.
+
+```powershell
+.venv\Scripts\activate
+$env:PYTHONPATH='src'
+python -m crism_pipeline.gui
+# o, tras pip install -e .:
+crism-pipeline-gui
+```
+
+Manual: [docs/08_manual_gui.md](docs/08_manual_gui.md)
+
+## Uso básico (CLI)
 
 ```bash
-# 1. Descargar cubos SR
-python -m crism_pipeline download --pdsid "FRT00009*" --max-products 2
+# 1. Descargar cubos SR (SearchResults.txt exportado desde ODE Map Search)
+python -m crism_pipeline download --ids-file SearchResults.txt
 
-# 2. Convertir a HDF5
-python -m crism_pipeline process --input data/raw/frt00009001_07_if163j_mtr3
+# 2. Mapas minerales (browse MAF, PHY, HYD, CAR, FEM) — directo desde ENVI
+python -m crism_pipeline maps --input data/raw/frt000084c9_07_if166j_mtr3
 
-# 3. Mapas minerales (browse MAF, PHY, HYD, CAR, FEM)
-python -m crism_pipeline maps --input data/processed/FRT00009001_07_SR163J_MTR3.h5
+# 3. Detección de olivina y carbonatos
+python -m crism_pipeline detect --input data/raw/frt000084c9_07_if166j_mtr3 --mineral olivine mg_carbonate
 
-# 4. Detección de olivina y carbonatos
-python -m crism_pipeline detect --input data/processed/escena.h5 --mineral olivine mg_carbonate
+# 4. Clasificación de unidades (K-means)
+python -m crism_pipeline classify --input data/raw/frt000084c9_07_if166j_mtr3 --method kmeans --n-clusters 5
 
-# 5. Clasificación de unidades (K-means)
-python -m crism_pipeline classify --input data/processed/escena.h5 --method kmeans --n-clusters 5
-
-# Pipeline completo
-python -m crism_pipeline run --input data/raw/frt00009001_07_if163j_mtr3
+# Pipeline completo (sin conversión intermedia)
+python -m crism_pipeline run --input data/raw/frt000084c9_07_if166j_mtr3
 ```
+
+**En QGIS:** abre el archivo `.IMG` (no el `.hdr`) de `data/raw/` — ya incluye CRS y 60 bandas con nombre.
 
 ## Estructura del proyecto
 
 ```
 Semillero/
+├── assets/                    # Logo GCPA (referencia)
 ├── config/
 │   ├── pipeline.yaml          # Rutas, ODE, parámetros de stretch/clasificación
 │   └── viviano2014.yaml       # Browse products, minerales, reglas de detección
 ├── data/
-│   ├── raw/                   # Descargas ODE (.img, .hdr, .lbl)
-│   ├── processed/             # Cubos HDF5
+│   ├── raw/                   # Descargas ODE (.img, .hdr, .lbl) — fuente principal
+│   ├── processed/             # Exportaciones opcionales (GeoTIFF)
 │   ├── maps/                  # PNG, GeoTIFF, detecciones, clasificaciones
 │   └── models/                # Modelos entrenados (.joblib)
-├── docs/                      # Documentación detallada
+├── docs/                      # Documentación detallada + manual GUI
 ├── examples/                  # Plantillas (IDs, CSV entrenamiento)
-└── src/crism_pipeline/        # Código fuente
+└── src/crism_pipeline/        # Código fuente (+ assets/ logo)
 ```
 
 ## Documentación
@@ -72,6 +89,7 @@ Semillero/
 | [docs/05_mapas_minerales.md](docs/05_mapas_minerales.md) | Browse products y mapas temáticos |
 | [docs/06_deteccion_minerales.md](docs/06_deteccion_minerales.md) | Detección binaria por mineral |
 | [docs/07_clasificacion_unidades.md](docs/07_clasificacion_unidades.md) | Clasificación geológica |
+| [docs/08_manual_gui.md](docs/08_manual_gui.md) | Manual de la interfaz gráfica |
 
 ## Referencia principal
 

@@ -2,42 +2,46 @@
 
 ## 4.1 Visión general
 
-El pipeline transforma cubos SR crudos en productos analíticos:
+El pipeline transforma cubos SR (ENVI) en productos analíticos. El flujo principal **no requiere** conversión intermedia:
 
+```mermaid
+flowchart LR
+  DL[download] --> ENVI[ENVI SR<br/>data/raw]
+  ENVI --> MAPS[maps]
+  ENVI --> DET[detect]
+  ENVI --> CLS[classify]
+  ENVI --> RUN[run<br/>maps + detect + classify]
+  ENVI -.-> EXP[export<br/>GeoTIFF opcional]
 ```
-download → process → maps / detect / classify
-                ↘ run (todo en uno)
-```
 
-## 4.2 Paso `process`: ENVI → HDF5
+## 4.2 Paso `export` (opcional): ENVI → GeoTIFF
 
-Convierte el cubo SR a HDF5 para lectura rápida y procesamiento repetido.
+Copia el cubo a GeoTIFF para GIS (p. ej. QGIS). El análisis (`maps` / `detect` / `classify` / `run`) trabaja directo sobre ENVI.
 
 ```bash
-python -m crism_pipeline process --input data/raw/frt00009001_07_if163j_mtr3
+python -m crism_pipeline export --input data/raw/frt00009001_07_if163j_mtr3
 ```
 
 **Entrada:** directorio con `.hdr/.img` SR, o ruta directa al `.hdr`.
 
-**Salida:** `data/processed/<PRODUCT_ID>.h5` con:
+**Salida:** `data/processed/<PRODUCT_ID>.tif` (y, si se usa la API, también es posible HDF5 vía biblioteca).
 
-| Dataset | Contenido |
-|---------|-----------|
-| `data` | Array float32 (lines, samples, bands) |
-| `band_names` | Nombres de índices Viviano |
-| `valid_mask` | Máscara de píxeles válidos |
+| Contenido | Descripción |
+|-----------|-------------|
+| Bandas | Índices Viviano (nombres en metadata) |
+| CRS | Aproximado desde `map info` del header ENVI |
 
 ## 4.3 Lectura programática
 
 ```python
 from pathlib import Path
-from crism_pipeline.io_sr import load_sr_cube, load_hdf5
+from crism_pipeline.io_sr import load_sr_cube, load_cube
 
-# Desde ENVI
+# Desde ENVI (recomendado)
 cube = load_sr_cube(Path("data/raw/mi_escena"))
 
-# Desde HDF5
-cube = load_hdf5(Path("data/processed/mi_escena.h5"))
+# ENVI o HDF5 legado
+cube = load_cube(Path("data/processed/mi_escena.h5"))
 
 # Acceder a un índice
 olivine = cube.band("OLINDEX3")
@@ -47,7 +51,7 @@ print(cube.valid_mask.sum())  # píxeles válidos
 
 ## 4.4 Comando `run`: pipeline completo
 
-Ejecuta process + maps + detect + classify en una sola invocación:
+Ejecuta maps + detect + classify en una sola invocación (sobre el cubo ENVI):
 
 ```bash
 python -m crism_pipeline run \
@@ -68,6 +72,14 @@ maps/<product_id>/
 
 ## 4.5 Flujo recomendado para investigación
 
+```mermaid
+flowchart TD
+  A[1 · Exploración<br/>maps · MAF PHY HYD] --> B[2 · Hipótesis mineral<br/>detect]
+  B --> C[3 · Segmentación<br/>classify · kmeans / firmas]
+  C --> D[4 · Validación<br/>literatura · cubo IF]
+  D --> E[5 · Refinamiento<br/>umbrales en viviano2014.yaml]
+```
+
 1. **Exploración:** `maps` con browse MAF, PHY, HYD
 2. **Hipótesis mineral:** `detect` sobre minerales candidatos
 3. **Segmentación:** `classify` con K-means o firmas
@@ -80,12 +92,12 @@ maps/<product_id>/
 |---------|-----|
 | `.png` | Visualización rápida |
 | `.tif` | GeoTIFF (si hay `map info` en header) |
-| `.h5` | Cubo procesado intermedio |
+| `.h5` | Cubo legado / API de biblioteca |
 | `.json` | Metadatos de clasificación |
 | `.joblib` | Modelo entrenado (supervisado/K-means) |
 
 ## 4.7 Integración con GIS
 
-Los GeoTIFF generados pueden abrirse en QGIS. Si el header ENVI incluye `map info`, el pipeline escribe CRS EPSG:4326 y geotransform aproximado.
+Los GeoTIFF generados (o el `.IMG` ENVI) pueden abrirse en QGIS. Si el header ENVI incluye `map info`, el pipeline escribe CRS EPSG:4326 y geotransform aproximado.
 
 Para análisis preciso en proyección MRO, consulta el label PDS asociado al producto MTRDR.

@@ -19,10 +19,18 @@ dependencies = [
   "tqdm>=4.65",
   "h5py>=3.9",
   "pandas>=2.0",
+  "customtkinter>=5.2",
+  "pillow>=10.0",
+  "markdown>=3.5",
+  "tkinterweb>=3.0",
 ]
 
 [project.scripts]
 crism-pipeline = "crism_pipeline.cli:main"
+crism-pipeline-gui = "crism_pipeline.gui:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+crism_pipeline = ["assets/*"]
